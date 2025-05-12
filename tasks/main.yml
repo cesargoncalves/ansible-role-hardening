@@ -1,0 +1,29 @@
+---
+- name: Ensure ansible_user is not root.
+  ansible.builtin.fail:
+    msg: >-
+      To prevent lockdown ansible_user must NOT be root.
+      Please specify a different user for Ansible operations.
+  when: ansible_user == "root"
+
+- name: Ensure root login is disabled.
+  ansible.builtin.user:
+    name: root
+    shell: /usr/sbin/nologin
+    password: '!'
+    # password_lock: yes
+
+- name: Ensure sshd_config.d exists.
+  ansible.builtin.file:
+    name: '/etc/ssh/sshd_config.d/'
+    owner: 'root'
+    group: 'root'
+    mode: '0700'
+    state: directory
+
+- name: Ensure 99-custom.conf file is present.
+  ansible.builtin.copy:
+    src: "{{ role_path }}/files/99-hardening.conf"
+    dest: '/etc/ssh/sshd_config.d/99-hardening.conf'
+    mode: '0644'
+  notify: Restart sshd
